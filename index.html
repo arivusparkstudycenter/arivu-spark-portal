@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="google-site-verification" content="j9RBt7maRAU3kGgrHUTstQMfBfD9zR0MyloSd8Dm72c" />
+<meta name="description" content="Arivu Spark — Tuition Center Portal for student management, fees, results, tasks, and study material.">
 <title>Arivu Spark — Tuition Center Portal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -284,7 +286,7 @@ tbody tr:hover{background:var(--cream);}
    ARIVU SPARK PORTAL — core data layer
    ===================================================================== */
 const DB_KEYS = ['users','students','teachers','fees','tasks','results','materials','complaints','gallery','taskstatus'];
-const SEED_VERSION = 'ass_seed_v4';
+const SEED_VERSION = 'ass_seed_v5';
 
 const CLASS_OPTIONS = Array.from({length:12},(_,i)=>'Class '+(i+1));
 const SUBJECT_OPTIONS = ['English','Tamil','Hindi','Mathematics','Science','Physics','Chemistry','Biology','Social Science','Computer Science'];
@@ -1120,17 +1122,23 @@ function pageTasks(){
     <div><h2>Tasks</h2><div class="sub">Assign tasks and homework to students or classes</div></div>
     <button class="btn btn-gold" onclick="openTaskForm()">+ Assign Task</button>
   </div>
-  <div class="table-wrap"><table><thead><tr><th>Title</th><th>Description</th><th>Assigned To</th><th>Assigned Date</th><th>Follow-ups</th><th>Status</th><th>Actions</th></tr></thead>
+  <div class="table-wrap"><table><thead><tr><th>Title</th><th>Description</th><th>Assigned To</th><th>Assigned Date</th><th>Follow-ups</th><th>Progress</th><th>Actions</th></tr></thead>
   <tbody>${tasks.length? [...tasks].sort((a,b)=>b.id-a.id).map(t=>{
     let target = t.targetType==='class'? `Class: ${t.targetValue}` : (()=>{ const s=findStudent(t.targetValue); return s? `Student: ${studentFullName(s)}` : 'Unknown'; })();
     const targets = studentsForTask(t);
     const statuses = targets.map(s=>getStatusFor(t.id, s.id));
     const done = statuses.filter(s=>s==='Completed').length;
     const inProgress = statuses.filter(s=>s==='In Progress').length;
+    const notStarted = targets.length - done - inProgress;
     return `<tr><td>${escapeHtml(t.title)}</td><td>${escapeHtml(t.description)}</td><td>${target}</td>
     <td>${fmtDateShort(t.assignedDate)}</td>
     <td>${(t.followups||[]).map(fd=>fmtDateShort(fd)).join(', ')}</td>
-    <td><span class="badge badge-green">${done} Completed</span> <span class="badge badge-gold">${inProgress} In Progress</span></td>
+    <td>
+      <span class="badge badge-navy">${targets.length} Assigned</span>
+      <span class="badge badge-green">${done} Completed</span>
+      <span class="badge badge-gold">${inProgress} In Progress</span>
+      <span class="badge badge-grey">${notStarted} Not Started</span>
+    </td>
     <td><div class="flex-row">
       <button class="btn btn-sm btn-outline" onclick="viewTaskStatus(${t.id})">View Status</button>
       <button class="btn btn-sm btn-danger" onclick="deleteTask(${t.id})">Delete</button>
@@ -1242,12 +1250,12 @@ function pageResults(){
     const results = load('results').filter(r=>String(r.studentId)===String(student.id));
     return `
     <div class="page-header"><div><h2>My Results</h2><div class="sub">Your exam performance</div></div></div>
-    <div class="table-wrap"><table><thead><tr><th>Exam</th><th>Subject</th><th>Marks</th><th>Total</th><th>Grade</th></tr></thead>
+    <div class="table-wrap"><table><thead><tr><th>Exam</th><th>Subject</th><th>Date of Test</th><th>Marks</th><th>Total</th><th>Grade</th></tr></thead>
     <tbody>${results.length? results.map(r=>{
       const pct = (Number(r.marks)/Number(r.total))*100;
-      return `<tr><td>${escapeHtml(r.exam)}</td><td>${escapeHtml(r.subject)}</td><td>${r.marks}</td><td>${r.total}</td>
+      return `<tr><td>${escapeHtml(r.exam)}</td><td>${escapeHtml(r.subject)}</td><td>${r.examDate? fmtDateShort(r.examDate):'—'}</td><td>${r.marks}</td><td>${r.total}</td>
       <td><span class="badge badge-gold">${gradeFor(pct)}</span></td></tr>`;
-    }).join('') : `<tr><td colspan="5"><div class="empty-state"><div class="icon">&#128202;</div><p>No results recorded yet.</p></div></td></tr>`}
+    }).join('') : `<tr><td colspan="6"><div class="empty-state"><div class="icon">&#128202;</div><p>No results recorded yet.</p></div></td></tr>`}
     </tbody></table></div>
     `;
   }
@@ -1265,13 +1273,14 @@ function pageResults(){
       <button class="btn btn-gold" onclick="openResultForm()">+ Add Result</button>
     </div>
   </div>
-  <div class="table-wrap"><table><thead><tr><th>Student ID</th><th>Class</th><th>Student Name</th><th>Exam</th><th>Subject</th><th>Marks</th><th>Total</th><th>Grade</th></tr></thead>
+  <div class="table-wrap"><table><thead><tr><th>Student ID</th><th>Class</th><th>Student Name</th><th>Exam</th><th>Subject</th><th>Date of Test</th><th>Marks</th><th>Total</th><th>Grade</th></tr></thead>
   <tbody>${results.length? [...results].sort((a,b)=>b.id-a.id).map(r=>{
     const pct = (Number(r.marks)/Number(r.total))*100;
     return `<tr><td>STU-${String(r.studentId).padStart(4,'0')}</td><td><span class="badge badge-navy">${escapeHtml(r.class||'—')}</span></td>
     <td>${escapeHtml(r.studentName)}</td><td>${escapeHtml(r.exam)}</td><td>${escapeHtml(r.subject)}</td>
+    <td>${r.examDate? fmtDateShort(r.examDate):'—'}</td>
     <td>${r.marks}</td><td>${r.total}</td><td><span class="badge badge-gold">${gradeFor(pct)}</span></td></tr>`;
-  }).join('') : `<tr><td colspan="8"><div class="empty-state"><div class="icon">&#128202;</div><p>No results recorded yet.</p></div></td></tr>`}
+  }).join('') : `<tr><td colspan="9"><div class="empty-state"><div class="icon">&#128202;</div><p>No results recorded yet.</p></div></td></tr>`}
   </tbody></table></div>
   `;
 }
@@ -1289,6 +1298,7 @@ function openResultForm(){
       <div class="grid grid-2">
         <div class="field"><label>Exam *</label><input type="text" id="rExam" required></div>
         <div class="field"><label>Subject *</label><input type="text" id="rSubject" required></div>
+        <div class="field"><label>Date of Test *</label><input type="date" id="rExamDate" value="${todayISO()}" required></div>
         <div class="field"><label>Marks Obtained *</label><input type="number" id="rMarks" min="0" required></div>
         <div class="field"><label>Total Marks *</label><input type="number" id="rTotal" min="1" required></div>
       </div>
@@ -1311,6 +1321,7 @@ function saveResult(e){
     class: student.class,
     exam: document.getElementById('rExam').value.trim(),
     subject: document.getElementById('rSubject').value.trim(),
+    examDate: document.getElementById('rExamDate').value,
     marks: Number(document.getElementById('rMarks').value),
     total: Number(document.getElementById('rTotal').value)
   };
@@ -1322,8 +1333,8 @@ function saveResult(e){
 
 function downloadResultTemplate(){
   const students = load('students');
-  const rows = [['Student ID','Student Name','Class','Exam','Subject','Marks','Total']];
-  students.forEach(s=> rows.push([`STU-${String(s.id).padStart(4,'0')}`, studentFullName(s), s.class, '', '', '', '']));
+  const rows = [['Student ID','Student Name','Class','Exam','Subject','Date of Test','Marks','Total']];
+  students.forEach(s=> rows.push([`STU-${String(s.id).padStart(4,'0')}`, studentFullName(s), s.class, '', '', '', '', '']));
   const ws = XLSX.utils.aoa_to_sheet(rows);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Results');
@@ -1340,7 +1351,7 @@ function uploadResults(e){
       const data = new Uint8Array(ev.target.result);
       const wb = XLSX.read(data, {type:'array'});
       const sheet = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(sheet, {defval:''});
+      const rows = XLSX.utils.sheet_to_json(sheet, {defval:'', raw:false});
       const students = load('students');
       let results = load('results');
       let added=0, skipped=0;
@@ -1353,12 +1364,18 @@ function uploadResults(e){
         const numericId = parseInt(idStr.replace(/\D/g,''), 10);
         const student = students.find(s=>s.id===numericId);
         if(!student){ skipped++; return; }
+        let examDate = String(row['Date of Test']||'').trim();
+        if(examDate){
+          const parsed = new Date(examDate);
+          if(!isNaN(parsed)) examDate = parsed.getFullYear()+'-'+String(parsed.getMonth()+1).padStart(2,'0')+'-'+String(parsed.getDate()).padStart(2,'0');
+        }
         results.push({
           id: nextCounter('result'),
           studentId: student.id,
           studentName: studentFullName(student),
           class: student.class,
           exam, subject: String(row['Subject']||'').trim(),
+          examDate: examDate || '',
           marks: Number(marks), total: Number(total)
         });
         added++;
