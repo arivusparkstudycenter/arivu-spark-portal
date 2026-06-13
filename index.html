@@ -9,6 +9,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <style>
 :root{
   --navy:#10233f;
@@ -223,8 +225,20 @@ tbody tr:hover{background:var(--cream);}
 </head>
 <body>
 
+<!-- ===================== LOADING ===================== -->
+<div class="login-wrap" id="loadingScreen">
+  <div class="login-card" style="text-align:center;">
+    <div class="brand">
+      <div class="crest"><span>AS</span></div>
+      <h1>Arivu Spark</h1>
+      <p>Tuition Center Portal</p>
+    </div>
+    <p class="muted" style="margin-top:18px;">Connecting to portal data&hellip;</p>
+  </div>
+</div>
+
 <!-- ===================== LOGIN ===================== -->
-<div class="login-wrap" id="loginScreen">
+<div class="login-wrap hidden" id="loginScreen">
   <div class="login-card">
     <div class="brand">
       <div class="crest"><span>AS</span></div>
@@ -286,30 +300,99 @@ tbody tr:hover{background:var(--cream);}
    ARIVU SPARK PORTAL — core data layer
    ===================================================================== */
 const DB_KEYS = ['users','students','teachers','fees','tasks','results','materials','complaints','gallery','taskstatus'];
-const SEED_VERSION = 'ass_seed_v5';
 
 const CLASS_OPTIONS = Array.from({length:12},(_,i)=>'Class '+(i+1));
 const SUBJECT_OPTIONS = ['English','Tamil','Hindi','Mathematics','Science','Physics','Chemistry','Biology','Social Science','Computer Science'];
 const GALLERY_CATEGORIES = ['Events','Achievements','Classroom','Sports','Cultural'];
 
-function load(key){ try{ return JSON.parse(localStorage.getItem('ass_'+key)) || []; }catch(e){ return []; } }
-function save(key, val){ localStorage.setItem('ass_'+key, JSON.stringify(val)); }
+/* ---------------------------------------------------------------------
+   Firebase / Firestore setup — shared cloud data store
+   --------------------------------------------------------------------- */
+const firebaseConfig = {
+  apiKey: "AIzaSyDh_lnUVPkzwPUDqMbOgsMURXDkrfpMnMw",
+  authDomain: "arivu-spark.firebaseapp.com",
+  projectId: "arivu-spark",
+  storageBucket: "arivu-spark.firebasestorage.app",
+  messagingSenderId: "696447464576",
+  appId: "1:696447464576:web:d30fe53276c999243ca265"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const PORTAL_COLLECTION = 'portal';
 
-function freshInit(){
-  // Remove any existing stored data and seed a clean portal
-  Object.keys(localStorage).forEach(k=>{ if(k.startsWith('ass_')) localStorage.removeItem(k); });
-  save('users', [{id:1, name:'Administrator', loginId:'admin', password:'admin123', role:'admin', email:'admin@arivuspark.edu'}]);
-  DB_KEYS.filter(k=>k!=='users').forEach(k=>save(k, []));
-  localStorage.setItem(SEED_VERSION, '1');
-  localStorage.setItem('ass_counters', JSON.stringify({user:1, student:0, teacher:0, fee:0, task:0, result:0, material:0, complaint:0, gallery:0, taskstatus:0}));
+// In-memory cache mirroring Firestore documents (kept in sync via onSnapshot)
+const cache = {};
+let appReady = false;
+
+function load(key){
+  if(key==='counters') return cache.counters || {};
+  return cache[key] || [];
 }
-if(localStorage.getItem(SEED_VERSION) !== '1'){ freshInit(); }
-
+function save(key, val){
+  cache[key] = val;
+  db.collection(PORTAL_COLLECTION).doc(key).set({value: val}).catch(err=>{
+    console.error('Save failed for', key, err);
+    toast('Could not sync to server. Check your internet connection.', 'error');
+  });
+}
 function nextCounter(name){
-  const c = JSON.parse(localStorage.getItem('ass_counters')||'{}');
+  const c = cache.counters || {};
   c[name] = (c[name]||0)+1;
-  localStorage.setItem('ass_counters', JSON.stringify(c));
+  cache.counters = c;
+  db.collection(PORTAL_COLLECTION).doc('counters').set({value:c}).catch(err=>console.error('Counter sync failed', err));
   return c[name];
+}
+
+async function bootPortal(){
+  const allKeys = [...DB_KEYS, 'counters'];
+  const metaRef = db.collection(PORTAL_COLLECTION).doc('_meta');
+
+  try{
+    const metaSnap = await metaRef.get();
+    if(!metaSnap.exists){
+      // First-ever launch: seed a clean portal with just the default Administrator account
+      const batch = db.batch();
+      batch.set(db.collection(PORTAL_COLLECTION).doc('users'), {value:[{id:1, name:'Administrator', loginId:'admin', password:'admin123', role:'admin', email:'admin@arivuspark.edu'}]});
+      DB_KEYS.filter(k=>k!=='users').forEach(k=> batch.set(db.collection(PORTAL_COLLECTION).doc(k), {value:[]}));
+      batch.set(db.collection(PORTAL_COLLECTION).doc('counters'), {value:{user:1, student:0, teacher:0, fee:0, task:0, result:0, material:0, complaint:0, gallery:0, taskstatus:0}});
+      batch.set(metaRef, {seeded:true, seededAt: firebase.firestore.FieldValue.serverTimestamp()});
+      await batch.commit();
+    }
+  }catch(err){
+    console.error('Seed check failed', err);
+  }
+
+  // Subscribe to live updates for every data collection
+  const firstLoad = allKeys.map(key=> new Promise(resolve=>{
+    let resolved = false;
+    db.collection(PORTAL_COLLECTION).doc(key).onSnapshot(snap=>{
+      const data = snap.data();
+      cache[key] = data && data.value !== undefined ? data.value : (key==='counters' ? {} : []);
+      if(!resolved){ resolved = true; resolve(); }
+      else if(appReady){ maybeRerender(); }
+    }, err=>{
+      console.error('Listener error for', key, err);
+      if(!resolved){ resolved = true; resolve(); }
+    });
+  }));
+
+  await Promise.all(firstLoad);
+  appReady = true;
+
+  document.getElementById('loadingScreen').classList.add('hidden');
+  if(session && session.userId){
+    enterApp();
+  } else {
+    document.getElementById('loginScreen').classList.remove('hidden');
+  }
+}
+
+function maybeRerender(){
+  // Re-render the current page if data changed remotely, unless a modal/form is open
+  if(!session) return;
+  if(document.getElementById('modalRoot') && document.getElementById('modalRoot').innerHTML.trim() !== '') return;
+  if(document.getElementById('appShell').classList.contains('hidden')) return;
+  renderPage();
 }
 
 /* =====================================================================
@@ -1660,9 +1743,7 @@ const PAGES = {
 /* =====================================================================
    Boot
    ===================================================================== */
-if(session && session.userId){
-  enterApp();
-}
+bootPortal();
 </script>
 </body>
 </html>
