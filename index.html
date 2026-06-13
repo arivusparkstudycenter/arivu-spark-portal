@@ -221,6 +221,50 @@ tbody tr:hover{background:var(--cream);}
 .flex-row{display:flex;gap:10px;flex-wrap:wrap;}
 .help-text{font-size:12px;color:var(--muted);margin-top:6px;}
 .chat-removed-note{font-size:12px;color:var(--muted);}
+
+/* ===== Landing Page ===== */
+.landing{background:var(--cream);min-height:100vh;}
+.landing-nav{
+  background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:space-between;
+  padding:14px 32px;position:sticky;top:0;z-index:50;flex-wrap:wrap;gap:12px;
+}
+.landing-nav .brand-mini{display:flex;align-items:center;gap:10px;font-family:'Playfair Display',serif;font-weight:700;font-size:19px;color:var(--gold-light);}
+.crest-mini{width:36px;height:36px;border-radius:50%;background:var(--navy-soft);border:2px solid var(--gold);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.crest-mini span{font-family:'Playfair Display',serif;font-weight:800;color:var(--gold-light);font-size:14px;}
+.landing-links{display:flex;gap:24px;flex-wrap:wrap;}
+.landing-links a{color:#cdd6e6;text-decoration:none;font-weight:500;font-size:14px;}
+.landing-links a:hover{color:var(--gold-light);}
+
+.hero{
+  background:linear-gradient(135deg,var(--navy) 0%, var(--navy-light) 55%, var(--navy-soft) 100%);
+  color:#fff;padding:64px 32px;text-align:center;
+}
+.hero h1{font-size:42px;color:var(--gold-light);}
+.hero .tagline{color:#cdd6e6;font-size:13px;letter-spacing:2px;text-transform:uppercase;margin-top:6px;}
+.hero p.lead{color:#dbe2ef;font-size:15.5px;max-width:620px;margin:18px auto 0;line-height:1.6;}
+.hero-buttons{display:flex;gap:14px;justify-content:center;margin-top:28px;flex-wrap:wrap;}
+
+.section{padding:54px 32px;max-width:1100px;margin:0 auto;}
+.section h2{text-align:center;font-size:28px;}
+.section .section-sub{text-align:center;color:var(--muted);margin:8px 0 32px;font-size:14px;}
+
+.vm-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:24px;}
+@media(max-width:700px){.vm-grid{grid-template-columns:1fr;}}
+.vm-card{background:#fff;border-radius:var(--radius);padding:28px;box-shadow:var(--shadow);border-top:4px solid var(--gold);}
+.vm-card h3{font-size:19px;margin-bottom:10px;}
+.vm-card p{color:var(--muted);font-size:14px;line-height:1.7;margin:0;}
+
+.inquiry-section{background:var(--navy);padding:54px 32px;}
+.inquiry-section h2, .inquiry-section .section-sub{color:#fff;}
+.inquiry-section .section-sub{color:#cdd6e6;}
+.inquiry-form-card{background:var(--cream);border-radius:var(--radius);padding:28px;max-width:560px;margin:0 auto;box-shadow:var(--shadow);}
+
+.landing-footer{background:#0a1830;color:#a9b6cc;text-align:center;padding:26px 20px;font-size:13px;}
+.landing-footer a{color:var(--gold-light);text-decoration:none;font-weight:600;cursor:pointer;}
+.landing-footer a:hover{text-decoration:underline;}
+
+#loginModalOverlay .login-card{border-top:6px solid var(--gold);position:relative;}
 </style>
 </head>
 <body>
@@ -238,8 +282,82 @@ tbody tr:hover{background:var(--cream);}
 </div>
 
 <!-- ===================== LOGIN ===================== -->
-<div class="login-wrap hidden" id="loginScreen">
+<div class="hidden" id="loginScreen">
+  <div class="landing">
+    <header class="landing-nav">
+      <div class="brand-mini"><div class="crest-mini"><span>AS</span></div> Arivu Spark</div>
+      <nav class="landing-links">
+        <a href="#home">Home</a>
+        <a href="#vision">Vision &amp; Mission</a>
+        <a href="#gallery">Gallery</a>
+        <a href="#inquiry">Enquire</a>
+      </nav>
+      <button class="btn btn-gold btn-sm" onclick="openLoginModal()">Login</button>
+    </header>
+
+    <section class="hero" id="home">
+      <h1>Arivu Spark</h1>
+      <div class="tagline">Tuition Center</div>
+      <p class="lead">Personalized coaching, dedicated teachers, and a structured learning path for Classes 1–12 — helping every student spark their potential.</p>
+      <div class="hero-buttons">
+        <a href="#inquiry" class="btn btn-gold">Enquire Now</a>
+        <button class="btn btn-outline" style="border-color:#fff;color:#fff;" onclick="openLoginModal()">Student / Teacher / Admin Login</button>
+      </div>
+    </section>
+
+    <section class="section" id="vision">
+      <h2>Our Vision &amp; Mission</h2>
+      <div class="section-sub">What drives us, every single day</div>
+      <div class="vm-grid">
+        <div class="vm-card">
+          <h3>Our Vision</h3>
+          <p>To be the most trusted name in after-school learning — a place where every student discovers confidence, curiosity, and a love for learning that lasts well beyond the classroom.</p>
+        </div>
+        <div class="vm-card">
+          <h3>Our Mission</h3>
+          <p>To provide focused, subject-wise coaching with regular assessments, personal attention, and clear communication with parents — so every child's progress is visible, measurable, and celebrated.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="gallery">
+      <h2>Gallery</h2>
+      <div class="section-sub">A glimpse into life at Arivu Spark</div>
+      <div class="gallery-grid" id="landingGallery"></div>
+    </section>
+
+    <section class="inquiry-section" id="inquiry">
+      <h2>Enquire Now</h2>
+      <div class="section-sub">New to Arivu Spark? Tell us a bit about you and we'll get in touch.</div>
+      <div class="inquiry-form-card">
+        <form id="inquiryForm" onsubmit="submitInquiry(event)">
+          <div class="grid grid-2">
+            <div class="field"><label>Your Name *</label><input type="text" id="iqName" required></div>
+            <div class="field"><label>Contact Number *</label><input type="tel" id="iqPhone" required></div>
+          </div>
+          <div class="grid grid-2">
+            <div class="field"><label>Email</label><input type="email" id="iqEmail"></div>
+            <div class="field"><label>Class Interested In</label>
+              <select id="iqClass"><option value="">Select Class</option></select>
+            </div>
+          </div>
+          <div class="field"><label>Message</label><textarea id="iqMessage" rows="3" placeholder="Tell us what you're looking for..."></textarea></div>
+          <button type="submit" class="btn btn-gold btn-block">Submit Enquiry</button>
+          <div class="error-msg" id="inquiryMsg" style="color:var(--success);"></div>
+        </form>
+      </div>
+    </section>
+
+    <footer class="landing-footer">
+      &copy; 2026 Arivu Spark Tuition Center. All rights reserved. &nbsp;|&nbsp; <a onclick="openLoginModal()">Staff &amp; Student Login</a>
+    </footer>
+  </div>
+</div>
+
+<!-- ===================== LOGIN MODAL ===================== -->
+<div class="modal-overlay hidden" id="loginModalOverlay" onclick="if(event.target.id==='loginModalOverlay') closeLoginModal()">
   <div class="login-card">
+    <button class="modal-close" style="position:absolute;top:14px;right:18px;" onclick="closeLoginModal()">&times;</button>
     <div class="brand">
       <div class="crest"><span>AS</span></div>
       <h1>Arivu Spark</h1>
@@ -299,7 +417,7 @@ tbody tr:hover{background:var(--cream);}
 /* =====================================================================
    ARIVU SPARK PORTAL — core data layer
    ===================================================================== */
-const DB_KEYS = ['users','students','teachers','fees','tasks','results','materials','complaints','gallery','taskstatus'];
+const DB_KEYS = ['users','students','teachers','fees','tasks','results','materials','complaints','gallery','taskstatus','inquiries'];
 
 const CLASS_OPTIONS = Array.from({length:12},(_,i)=>'Class '+(i+1));
 const SUBJECT_OPTIONS = ['English','Tamil','Hindi','Mathematics','Science','Physics','Chemistry','Biology','Social Science','Computer Science'];
@@ -354,7 +472,7 @@ async function bootPortal(){
       const batch = db.batch();
       batch.set(db.collection(PORTAL_COLLECTION).doc('users'), {value:[{id:1, name:'Administrator', loginId:'admin', password:'admin123', role:'admin', email:'admin@arivuspark.edu'}]});
       DB_KEYS.filter(k=>k!=='users').forEach(k=> batch.set(db.collection(PORTAL_COLLECTION).doc(k), {value:[]}));
-      batch.set(db.collection(PORTAL_COLLECTION).doc('counters'), {value:{user:1, student:0, teacher:0, fee:0, task:0, result:0, material:0, complaint:0, gallery:0, taskstatus:0}});
+      batch.set(db.collection(PORTAL_COLLECTION).doc('counters'), {value:{user:1, student:0, teacher:0, fee:0, task:0, result:0, material:0, complaint:0, gallery:0, taskstatus:0, inquiry:0}});
       batch.set(metaRef, {seeded:true, seededAt: firebase.firestore.FieldValue.serverTimestamp()});
       await batch.commit();
     }
@@ -384,13 +502,17 @@ async function bootPortal(){
     enterApp();
   } else {
     document.getElementById('loginScreen').classList.remove('hidden');
+    renderLandingGallery();
   }
 }
 
 function maybeRerender(){
   // Re-render the current page if data changed remotely, unless a modal/form is open
-  if(!session) return;
   if(document.getElementById('modalRoot') && document.getElementById('modalRoot').innerHTML.trim() !== '') return;
+  if(!session){
+    if(!document.getElementById('loginScreen').classList.contains('hidden')) renderLandingGallery();
+    return;
+  }
   if(document.getElementById('appShell').classList.contains('hidden')) return;
   renderPage();
 }
@@ -400,6 +522,15 @@ function maybeRerender(){
    ===================================================================== */
 let session = JSON.parse(sessionStorage.getItem('ass_session')||'null');
 let currentRole = 'admin';
+
+function openLoginModal(){
+  document.getElementById('loginModalOverlay').classList.remove('hidden');
+}
+function closeLoginModal(){
+  document.getElementById('loginModalOverlay').classList.add('hidden');
+  document.getElementById('loginError').textContent='';
+  document.getElementById('loginForm').reset();
+}
 
 function selectRole(role){
   currentRole = role;
@@ -418,6 +549,7 @@ function handleLogin(e){
   session = {userId:user.id, role:user.role, name:user.name, loginId:user.loginId};
   sessionStorage.setItem('ass_session', JSON.stringify(session));
   document.getElementById('loginForm').reset();
+  closeLoginModal();
   enterApp();
 }
 
@@ -428,6 +560,57 @@ function signOut(){
   document.getElementById('loginScreen').classList.remove('hidden');
   document.getElementById('loginId').value='';
   document.getElementById('loginPassword').value='';
+  renderLandingGallery();
+}
+
+/* =====================================================================
+   Landing page: Gallery preview & Inquiry form
+   ===================================================================== */
+function renderLandingGallery(){
+  const el = document.getElementById('landingGallery');
+  if(!el) return;
+  const gallery = load('gallery').slice(0,6);
+  el.innerHTML = gallery.length? gallery.map(g=>`
+    <div class="gallery-item">
+      <img src="${g.image}" alt="${escapeHtml(g.title)}">
+      <div class="gi-body">
+        <h4>${escapeHtml(g.title)}</h4>
+        <span class="badge badge-navy">${escapeHtml(g.category)}</span>
+        <p>${escapeHtml(g.description||'')}</p>
+      </div>
+    </div>`).join('')
+    : `<div class="empty-state" style="grid-column:1/-1;"><div class="icon">&#128247;</div><p>Photos from our events and classrooms will appear here soon.</p></div>`;
+
+  const classSel = document.getElementById('iqClass');
+  if(classSel && classSel.options.length<=1){
+    CLASS_OPTIONS.forEach(c=>{
+      const opt = document.createElement('option');
+      opt.textContent = c;
+      classSel.appendChild(opt);
+    });
+  }
+}
+
+function submitInquiry(e){
+  e.preventDefault();
+  const name = document.getElementById('iqName').value.trim();
+  const phone = document.getElementById('iqPhone').value.trim();
+  const msgEl = document.getElementById('inquiryMsg');
+  if(!name || !phone){ msgEl.style.color='var(--danger)'; msgEl.textContent='Name and Contact Number are required.'; return; }
+  const inquiries = load('inquiries');
+  inquiries.push({
+    id: nextCounter('inquiry'),
+    name, phone,
+    email: document.getElementById('iqEmail').value.trim(),
+    classInterested: document.getElementById('iqClass').value,
+    message: document.getElementById('iqMessage').value.trim(),
+    date: todayISO(),
+    status: 'New'
+  });
+  save('inquiries', inquiries);
+  document.getElementById('inquiryForm').reset();
+  msgEl.style.color='var(--success)';
+  msgEl.textContent='Thank you! Your enquiry has been received — we will get back to you soon.';
 }
 
 /* =====================================================================
@@ -467,6 +650,7 @@ const NAV_CONFIG = {
     {id:'teachers', label:'Teachers', icon:'&#128100;'},
     {id:'fees', label:'Fee Management', icon:'&#128176;'},
     {id:'gallery', label:'Gallery', icon:'&#128247;'},
+    {id:'inquiries', label:'Inquiries', icon:'&#128231;'},
     {id:'accounts', label:'User Accounts', icon:'&#128272;'}
   ],
   teacher:[
@@ -1725,6 +1909,32 @@ function confirmDeleteAccount(id){
 }
 
 /* =====================================================================
+   PAGE: INQUIRIES (admin only) — submissions from the public landing page
+   ===================================================================== */
+function pageInquiries(){
+  const inquiries = load('inquiries');
+  return `
+  <div class="page-header"><div><h2>Inquiries</h2><div class="sub">Enquiries submitted via the public website</div></div></div>
+  <div class="table-wrap"><table><thead><tr><th>Date</th><th>Name</th><th>Phone</th><th>Email</th><th>Class Interested</th><th>Message</th><th>Status</th><th>Actions</th></tr></thead>
+  <tbody>${inquiries.length? [...inquiries].sort((a,b)=>b.id-a.id).map(q=>`
+    <tr><td>${fmtDateShort(q.date)}</td><td>${escapeHtml(q.name)}</td><td>${escapeHtml(q.phone)}</td>
+    <td>${escapeHtml(q.email||'—')}</td><td>${q.classInterested? `<span class="badge badge-navy">${escapeHtml(q.classInterested)}</span>`:'—'}</td>
+    <td>${escapeHtml(q.message||'—')}</td>
+    <td><span class="badge ${q.status==='Contacted'?'badge-green':'badge-gold'}">${q.status}</span></td>
+    <td>${q.status!=='Contacted'? `<button class="btn btn-sm btn-outline" onclick="markInquiryContacted(${q.id})">Mark Contacted</button>` : '—'}</td></tr>
+  `).join('') : `<tr><td colspan="8"><div class="empty-state"><div class="icon">&#128231;</div><p>No enquiries submitted yet.</p></div></td></tr>`}
+  </tbody></table></div>
+  `;
+}
+function markInquiryContacted(id){
+  let inquiries = load('inquiries');
+  inquiries = inquiries.map(q=> q.id===id? {...q, status:'Contacted'} : q);
+  save('inquiries', inquiries);
+  toast('Marked as contacted.');
+  renderPage();
+}
+
+/* =====================================================================
    PAGE ROUTER
    ===================================================================== */
 const PAGES = {
@@ -1737,6 +1947,7 @@ const PAGES = {
   materials: pageMaterials,
   complaints: pageComplaints,
   gallery: pageGallery,
+  inquiries: pageInquiries,
   accounts: pageAccounts
 };
 
